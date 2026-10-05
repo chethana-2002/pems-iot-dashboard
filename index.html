@@ -671,7 +671,9 @@
 
         function resetDashboardUI() {
             updateGauges(0, 0, 0, 0);
-            document.getElementById('dash-samples-tbody').innerHTML = '';
+            document.getElementById('dash-avg-co2').innerText = '--';
+            document.getElementById('dash-avg-co').innerText = '--';
+            document.getElementById('dash-avg-hc').innerText = '--';
             document.getElementById('samples-container').style.display = 'none';
             document.getElementById('pdf-btn').style.display = 'none';
             
