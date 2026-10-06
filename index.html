@@ -1020,24 +1020,23 @@
                 if(sampleCount >= 10) {
                     clearInterval(testInterval);
                     
-                    // Calculate final average
-                    const avgCo = rawSamples.reduce((a,b)=>a+b.co, 0) / 10;
-                    const avgHc = rawSamples.reduce((a,b)=>a+b.hc, 0) / 10;
-                    const avgCo2 = rawSamples.reduce((a,b)=>a+b.co2, 0) / 10;
+                    // Do NOT calculate a frontend average. Take the EXACT final values from the database
+                    const finalCo = s.co;
+                    const finalHc = s.hc;
+                    const finalCo2 = s.co2;
                     
-                    // Show average in table
-                    document.getElementById('dash-avg-co2').innerText = avgCo2.toFixed(3);
-                    document.getElementById('dash-avg-co').innerText = avgCo.toFixed(3);
-                    document.getElementById('dash-avg-hc').innerText = avgHc.toFixed(0);
+                    // Show final values in the UI
+                    document.getElementById('dash-avg-co2').innerText = finalCo2.toFixed(3);
+                    document.getElementById('dash-avg-co').innerText = finalCo.toFixed(3);
+                    document.getElementById('dash-avg-hc').innerText = finalHc.toFixed(0);
 
                     // Final gauge snap
-                    updateGauges(2500, avgCo, avgHc, avgCo2);
+                    updateGauges(2500, finalCo, finalHc, finalCo2);
 
-                    const finalStatus = (avgHc <= 6000 && avgCo <= 4.00) ? "PASS" : "FAIL";
+                    const finalStatus = (finalHc <= 6000 && finalCo <= 4.00) ? "PASS" : "FAIL";
                     
-                    // Push final calculated averages to Firebase and stop hardware
-                    await fbWrite("/Check", false); // Tell ESP32 to stop testing
-                    await fbWrite("/Sensors", { co: avgCo, hc: avgHc, co2: avgCo2 });
+                    // Stop hardware trigger, but DO NOT overwrite the ESP32's sensor values!
+                    await fbWrite("/Check", false); 
                     await fbWrite("/Result", { status: finalStatus });
 
                     // Save to history and setup PDF object
@@ -1046,9 +1045,9 @@
                         date: new Date().toLocaleDateString(),
                         time: new Date().toLocaleTimeString(),
                         vehicle: vehicle,
-                        co: avgCo,
-                        hc: avgHc,
-                        co2: avgCo2,
+                        co: finalCo,
+                        hc: finalHc,
+                        co2: finalCo2,
                         status: finalStatus,
                         user: currentUser ? currentUser.username : "Guest",
                         rawSamples: rawSamples
@@ -1085,7 +1084,7 @@
                             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                                 to_email: currentUser.email,
                                 subject: "PEMS Test Complete: " + vehicle,
-                                message: `The emission test for vehicle ${vehicle} has been completed.\nFinal Status: ${finalStatus}\nCO: ${avgCo.toFixed(2)}%\nHC: ${avgHc.toFixed(0)}ppm\nCO2: ${avgCo2.toFixed(2)}%`
+                                message: `The emission test for vehicle ${vehicle} has been completed.\nFinal Status: ${finalStatus}\nCO: ${finalCo.toFixed(2)}%\nHC: ${finalHc.toFixed(0)}ppm\nCO2: ${finalCo2.toFixed(2)}%`
                             }).then(() => {
                                 console.log("Silently sent completion email to " + currentUser.email);
                             }).catch((err) => {
